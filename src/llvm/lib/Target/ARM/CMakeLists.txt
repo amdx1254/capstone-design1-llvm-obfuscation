@@ -45,6 +45,7 @@ add_llvm_target(ARMCodeGen
   ARMRegisterInfo.cpp
   ARMOptimizeBarriersPass.cpp
   ARMRegisterBankInfo.cpp
+  ARMReturnObfuscation.cpp
   ARMSelectionDAGInfo.cpp
   ARMSubtarget.cpp
   ARMTargetMachine.cpp

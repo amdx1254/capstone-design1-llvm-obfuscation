@@ -99,6 +99,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeARMTarget() {
   initializeMVETailPredicationPass(Registry);
   initializeARMLowOverheadLoopsPass(Registry);
   initializeMVEGatherScatterLoweringPass(Registry);
+  initializeARMReturnObfuscationPass(Registry);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
@@ -491,6 +492,8 @@ void ARMPassConfig::addPreRegAlloc() {
     if (!DisableA15SDOptimization)
       addPass(createA15SDOptimizerPass());
   }
+
+  addPass(createARMReturnObfuscationPass());
 }
 
 void ARMPassConfig::addPreSched2() {
