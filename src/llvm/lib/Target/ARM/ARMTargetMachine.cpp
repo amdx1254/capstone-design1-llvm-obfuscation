@@ -492,8 +492,6 @@ void ARMPassConfig::addPreRegAlloc() {
     if (!DisableA15SDOptimization)
       addPass(createA15SDOptimizerPass());
   }
-
-  addPass(createARMReturnObfuscationPass());
 }
 
 void ARMPassConfig::addPreSched2() {
@@ -541,11 +539,12 @@ void ARMPassConfig::addPreEmitPass() {
   // Don't optimize barriers at -O0.
   if (getOptLevel() != CodeGenOpt::None)
     addPass(createARMOptimizeBarriersPass());
-
+  addPass(createARMReturnObfuscationPass());
   addPass(createARMConstantIslandPass());
   addPass(createARMLowOverheadLoopsPass());
 
   // Identify valid longjmp targets for Windows Control Flow Guard.
   if (TM->getTargetTriple().isOSWindows())
     addPass(createCFGuardLongjmpPass());
+  
 }

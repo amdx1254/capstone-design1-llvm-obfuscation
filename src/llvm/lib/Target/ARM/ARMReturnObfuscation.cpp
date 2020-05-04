@@ -26,7 +26,7 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
 
   bool runOnMachineFunction(MachineFunction &MF) override {
     //if( MF.getFunction().getName().equals("setup") ) {
-
+      MachineRegisterInfo *MRI = &MF.getRegInfo();
     if (true) {
           srand(time(NULL));
     ARMFunctionInfo *AFI = MF.getInfo<ARMFunctionInfo>();
@@ -38,7 +38,7 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
     std::vector<MachineBasicBlock *> returnbbs;
     std::vector<MachineBasicBlock *> NewBasicBlocks;
     MachineJumpTableInfo *MJTI = MF.getJumpTableInfo();
-
+    
     // Find All Instructions
     for (auto &MBB : MF) {
       for (auto &MI : MBB) {
@@ -47,11 +47,13 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
       }
     }
     int i = 1;
+    /*
     for (auto &MI : instructions) {
       const DebugLoc &DL = MI->getDebugLoc();
       MachineBasicBlock *OrigBB = MI->getParent();
       MachineBasicBlock *NewBB =
       MF.CreateMachineBasicBlock(OrigBB->getBasicBlock());
+        
       if (i == 1 || i == instructions.size())
         MF.insert(++OrigBB->getIterator(), NewBB);
       else {
@@ -60,17 +62,18 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
               ite++;
           }
         MF.insert(ite, NewBB);
-      }
+      } 
+      //MF.insert(++OrigBB->getIterator(), NewBB);
       i++;
-
       NewBB->splice(NewBB->end(), OrigBB, MI->getIterator(), OrigBB->end());
 
       // TII->insertUnconditionalBranch(*OrigBB, NewBB, DebugLoc());
       NewBB->transferSuccessors(OrigBB);
       OrigBB->addSuccessor(NewBB);
-
+  
       //NewBB->updateTerminator();
       //OrigBB->updateTerminator();
+      
       if (AFI->isThumb2Function()) {
         BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::t2B)).addMBB(NewBB).addImm(ARMCC::AL).addReg(0);
       } else if (AFI->isThumbFunction()) {
@@ -78,15 +81,48 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
       } else {
         BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::B)).addMBB(NewBB);
       }
+      
+
+     
+     srand(time(NULL));
+     int randimm = rand()%10+1;
+     
+     if (AFI->isThumb2Function()) {
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::tMOVi8), ARM::NoRegister)
+        .addImm(randimm);
+
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::tCMPi8))
+        .addReg(ARM::NoRegister, RegState::Kill)
+        .addImm(randimm);
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::tBcc))
+        .addMBB(NewBB)
+        .addImm(ARMCC::EQ)
+        .addReg(ARM::CPSR);
+      } else if (AFI->isThumbFunction()) {
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::tMOVi8), ARM::NoRegister)
+        .addImm(randimm);
+
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::tCMPi8))
+        .addReg(ARM::NoRegister)
+        .addImm(randimm);
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::tBcc))
+        .addMBB(NewBB)
+        .addImm(ARMCC::EQ)
+        .addReg(ARM::CPSR);
+      } else {
+        BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(ARM::B)).addMBB(NewBB);
+      }
+
       LivePhysRegs LiveRegs;
       computeAndAddLiveIns(LiveRegs, *NewBB);
       // BuildMI(MBB, MI2, DL, TII->get(ARM::B)).addMBB(BBB);
       //BuildMI(MBB, MBB.end(), DL, TII->get(ARM::MOVr), ARM::R10)
       //.addReg(ARM::R10)
       //.addImm(ARMCC::AL).addReg(0).addReg(0); 
-      outs() << "HOHOHOO: \n";
-      MI->dump();
+      //outs() << "HOHOHOO: \n";
+      //MI->dump();
     }
+    */
     /*
     if (!returns.empty()) {
 
@@ -120,6 +156,7 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
     }
 */
     for (auto &MBB : MF) {
+      /*
       outs() << "Contents of MachineBasicBlock:\n";
       outs() << MBB << "\n";
       const BasicBlock *BB = MBB.getBasicBlock();
@@ -130,6 +167,7 @@ struct ARMReturnObfuscation : public MachineFunctionPass {
         const Instruction *ii = &*i;
         errs() << *ii << "\n";
       }
+      */
     }
     return true;
      }
