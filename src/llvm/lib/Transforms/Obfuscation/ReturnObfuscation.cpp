@@ -13,10 +13,6 @@ namespace {
         ReturnObfuscation() : FunctionPass(ID) {}
         bool runOnFunction(Function &F) override {
             Module* mod = F.getParent();
-            /*
-            if (!F.getName().contains("setup") && !F.getName().contains("test")) {
-                return false;
-            }*/
             ArrayType* return_array = ArrayType::get(IntegerType::get(mod->getContext(), 8), 12);
             PointerType* return_array_ptr = PointerType::get(return_array, 0);
             PointerType* ret_func_ptr = PointerType::get(IntegerType::get(mod->getContext(), 8), 0);
@@ -66,7 +62,18 @@ namespace {
 
             for (auto &BB : RetBlocks) {
                 Constant* retBlockAddress = BlockAddress::get(BB);
+                Module* M = F.getParent();
                 
+                for (auto curFref = M->getFunctionList().begin(), 
+                        endFref = M->getFunctionList().end(); 
+                        curFref != endFref; ++curFref) {
+                    for (auto& B: curFref->getBasicBlockList()) {
+                        StoreInst* asdf = new StoreInst(retBlockAddress, ptr_this_ret, false, &B);
+                        asdf->setAlignment(MaybeAlign(4));
+                        break;
+                    }
+
+                }
                 BasicBlock* decrypt_start = BasicBlock::Create(mod->getContext(), "dec_start", &F, BB);
                 for (BasicBlock* preds : predecessors(BB)) {
                     preds->getTerminator()->eraseFromParent();
