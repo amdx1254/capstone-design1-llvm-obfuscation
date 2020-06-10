@@ -5,13 +5,91 @@
 #include "llvm/Support/Alignment.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/CFG.h"
+#include <fstream>
 using namespace llvm;
 
 namespace {
     struct ReturnObfuscation : public FunctionPass {
         static char ID;
-        ReturnObfuscation() : FunctionPass(ID) {}
+        ReturnObfuscation() : FunctionPass(ID) { }
+
+
+
         bool runOnFunction(Function &F) override {
+            size_t num_retblocks;
+            Module *mod = F.getParent();
+            std::vector<Constant *> retblocks;
+            // 함수 가져오기
+            std::ifstream function_list;
+            function_list.open("functions.txt");
+            std::vector<Function *> functions;
+            std::string line;
+            while(getline(function_list, line)) {
+                functions.push_back(mod->getFunction(line));
+            }
+            // 함수 별로 벡터에 집어넣기
+            for (auto &Fn : functions) {
+                for (auto &BB : (*Fn)) {
+                    if (BB.getName().equals("obfuscatedreturn")){
+                        Constant* retBlockAddress = BlockAddress::get(&BB);
+                        retblocks.push_back(retBlockAddress);
+                    }
+                }
+            }
+
+            num_retblocks = retblocks.size();
+
+            ArrayType* array_in = ArrayType::get(IntegerType::get(mod->getContext(), 8), 20);
+            ArrayType* array_out = ArrayType::get(array_in, 50);
+            PointerType* array_ptr = PointerType::get(array_out, 0);
+            ConstantInt* const_int_0 = ConstantInt::get(mod->getContext(), APInt(32, StringRef("0"), 10));
+            std::vector<Type*> Func_deobfus_type_args;
+            FunctionType* Func_deobfus_type = FunctionType::get(
+                IntegerType::get(mod->getContext(), 32),
+                Func_deobfus_type_args,
+                false
+            );
+
+            Function* Func_deobfus = mod->getFunction("func_deobfus");
+            if (!Func_deobfus) {
+                Func_deobfus = Function::Create(
+                    Func_deobfus_type,
+                    GlobalValue::ExternalLinkage,
+                    "func_deobfus", mod
+                );
+                Func_deobfus->setCallingConv(CallingConv::C);
+                AttributeList Func_deobfus_att_list;
+                SmallVector<AttributeList, 4> Attrs;
+                AttributeList PAS;
+                AttrBuilder B;
+                B.addAttribute(Attribute::NoInline);
+                B.addAttribute(Attribute::NoRecurse);
+                B.addAttribute(Attribute::NoUnwind);
+                B.addAttribute(Attribute::OptimizeNone);
+                PAS = AttributeList::get(mod->getContext(), ~0U, B);
+                Attrs.push_back(PAS);
+                Func_deobfus_att_list = AttributeList::get(mod->getContext(), Attrs);
+                Func_deobfus->setAttributes(Func_deobfus_att_list);
+                if (Func_deobfus->size() == 0) {
+                    GlobalVariable* gvar_ret_inst_list = new GlobalVariable(*mod,
+                    array_out,
+                    false,
+                    GlobalValue::ExternalLinkage,
+                    0,
+                    "ret_inst_list");
+                    gvar_ret_inst_list->setAlignment(MaybeAlign(16));
+
+                    BasicBlock* obfus_entry = BasicBlock::Create(mod->getContext(), "entry", Func_deobfus);
+                    for (size_t i = 0; i < num_retblocks; i++) {
+                        PointerType* ret_func_ptr = PointerType::get(IntegerType::get(mod->getContext(), 8), 0);
+                        AllocaInst* ptr_this_ret = new AllocaInst(ret_func_ptr, NULL,  "ptr", obfus_entry);;
+                        StoreInst* void_17 = new StoreInst(retblocks[i], ptr_this_ret, false, obfus_entry);
+                    }
+                    ReturnInst::Create(mod->getContext(), const_int_0, obfus_entry);
+                    
+                }   
+            }
+            /*
             Module* mod = F.getParent();
             ArrayType* return_array = ArrayType::get(IntegerType::get(mod->getContext(), 8), 12);
             PointerType* return_array_ptr = PointerType::get(return_array, 0);
@@ -123,6 +201,8 @@ namespace {
                 ldr_ptr_this_ret->setAlignment(MaybeAlign(4));
                 GetElementPtrInst* get_func_ptr_idx = GetElementPtrInst::Create(cast<PointerType>(ldr_ptr_this_ret->getType()->getScalarType())->getElementType(), ldr_ptr_this_ret, ldr_i_data_2, "arrayidx1", decrypt_ing);
                 get_func_ptr_idx->setIsInBounds(true);
+
+
                 LoadInst* ldr_func_ptr_idx = new LoadInst(get_func_ptr_idx, "", false, decrypt_ing);
                 ldr_func_ptr_idx->setAlignment(MaybeAlign(1));
 
@@ -175,6 +255,8 @@ namespace {
                 str_i_data_4->setAlignment(MaybeAlign(4));
                 BranchInst::Create(decrypt_cond, decrypt_add);
 
+
+
                 LoadInst* ldr_ret_array = new LoadInst(ret_array_ptr, "", false, decrypt_end);
                 ldr_ret_array->setAlignment(MaybeAlign(4));
 
@@ -187,6 +269,7 @@ namespace {
                 void_41->addDestination(BB);
                 errs().write_escaped(F.getName()) << "   " <<  F.getParent()->getName() <<  '\n';
             }
+            */
             return true;
         } 
 
