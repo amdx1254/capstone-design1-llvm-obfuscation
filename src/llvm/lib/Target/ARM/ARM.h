@@ -55,6 +55,9 @@ createARMInstructionSelector(const ARMBaseTargetMachine &TM, const ARMSubtarget 
                              const ARMRegisterBankInfo &RBI);
 Pass *createMVEGatherScatterLoweringPass();
 
+FunctionPass *createARMReturnObfuscationPass();
+void initializeARMReturnObfuscationPass(PassRegistry &);
+
 void LowerARMMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
                                   ARMAsmPrinter &AP);
 
