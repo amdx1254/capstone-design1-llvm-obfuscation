@@ -14,32 +14,36 @@ namespace {
         static char ID;
 
         PreProcess() : FunctionPass(ID) { }
-        bool runOnFunction(Function &F) override {            
+        bool runOnFunction(Function &F) override {  
             Module* mod = F.getParent();
             std::vector<Instruction *> instructions;
             std::vector<BasicBlock *> RetBlocks;
             bool inserted = false;
             std::ofstream functionFile("functions.txt", std::ios_base::app);
             if (functionFile.is_open()) {
-                functionFile << F.getName().str() << "\n";
+                if (!F.getName().contains("__cxx") && !F.getName().contains("_GLOBAL"))
+                    functionFile << F.getName().str() << "\n";
                 functionFile.close();
             }
-            for (auto &BB : F) {
-                for (auto &I : BB) {
-                    if (I.getOpcode() == Instruction::Ret) {
-                        instructions.push_back(&I);
+            if (!F.getName().contains("__cxx") && !F.getName().contains("_GLOBAL")) {
+                for (auto &BB : F) {
+                    for (auto &I : BB) {
+                        if (I.getOpcode() == Instruction::Ret) {
+                            instructions.push_back(&I);
+                        }
                     }
                 }
-            }
-            for (auto &I : instructions) {
-                BasicBlock *BB = I->getParent();
-                // One Instruction Basic Block has only one ret instructions
-                if (!BB->size() < 2)
-                {
-                    BasicBlock *retblock = BB->splitBasicBlock(I->getIterator(), "obfuscatedreturn");
-                } else {
-                    BB->setName("obfuscatedreturn");
+                for (auto &I : instructions) {
+                    BasicBlock *BB = I->getParent();
+                    // One Instruction Basic Block has only one ret instructions
+                    if (!BB->size() < 2)
+                    {
+                        BasicBlock *retblock = BB->splitBasicBlock(I->getIterator(), "obfuscatedreturn");
+                    } else {
+                        BB->setName("obfuscatedreturn");
+                    }
                 }
+            
             }
             return true;
         } 
