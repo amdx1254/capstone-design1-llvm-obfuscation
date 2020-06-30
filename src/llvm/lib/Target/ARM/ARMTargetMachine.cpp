@@ -99,6 +99,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeARMTarget() {
   initializeMVETailPredicationPass(Registry);
   initializeARMLowOverheadLoopsPass(Registry);
   initializeMVEGatherScatterLoweringPass(Registry);
+  initializeARMReturnObfuscationPass(Registry);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
@@ -538,11 +539,12 @@ void ARMPassConfig::addPreEmitPass() {
   // Don't optimize barriers at -O0.
   if (getOptLevel() != CodeGenOpt::None)
     addPass(createARMOptimizeBarriersPass());
-
+  addPass(createARMReturnObfuscationPass());
   addPass(createARMConstantIslandPass());
   addPass(createARMLowOverheadLoopsPass());
 
   // Identify valid longjmp targets for Windows Control Flow Guard.
   if (TM->getTargetTriple().isOSWindows())
     addPass(createCFGuardLongjmpPass());
+  
 }
